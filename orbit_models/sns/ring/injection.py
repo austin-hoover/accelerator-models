@@ -6,8 +6,8 @@ from orbit.core import orbit_mpi
 from orbit.lattice import AccLattice
 from orbit.lattice import AccNode
 
-from orbitsim.misc import get_magnetic_rigidity
-from orbitsim.lattice import get_node_for_name_any_case
+from orbit_tools.misc import get_magnetic_rigidity
+from orbit_tools.lattice import get_node_for_name_any_case
 
 
 def get_inj_kicker_angle_limits(mass: float, kin_energy: float) -> tuple[np.ndarray]:

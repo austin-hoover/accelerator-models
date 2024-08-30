@@ -40,10 +40,10 @@ from orbit.py_linac.overlapping_fields import SNS_EngeFunctionFactory
 from orbit.space_charge.sc3d import setSC3DAccNodes
 from orbit.space_charge.sc3d import setUniformEllipsesSCAccNodes
 
-from orbitsim.linac import add_aperture_nodes_to_classes
-from orbitsim.linac import add_aperture_nodes_to_drifts
-from orbitsim.linac import make_energy_aperture_node
-from orbitsim.linac import make_phase_aperture_node
+from orbit_tools.linac import add_aperture_nodes_to_classes
+from orbit_tools.linac import add_aperture_nodes_to_drifts
+from orbit_tools.linac import make_energy_aperture_node
+from orbit_tools.linac import make_phase_aperture_node
 
 
 SEQUENCES = [

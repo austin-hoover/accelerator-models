@@ -72,8 +72,6 @@ from orbit.utils import consts
 from orbit.utils.consts import mass_proton
 from orbit.utils.consts import speed_of_light
 
-from orbitsim.lattice import set_fringe
-
 
 ## Foil boundary relative to injection point [m]
 FOIL_XMIN_REL = -0.005
@@ -97,7 +95,7 @@ def read_transverse_impedance_file(path: str) -> tuple[list[complex]]:
     return (zp, zm)
 
 
-class SNS_RING(TEAPOT_Ring):
+class SNS_RING:
     def __init__(
         self,
         inj_x: float = 0.0486,
@@ -109,7 +107,7 @@ class SNS_RING(TEAPOT_Ring):
         foil_ymin_rel: float = None,
         foil_ymax_rel: float = None,
     ) -> None:
-        TEAPOT_Ring.__init__(self)
+        self.lattice = TEAPOT_Ring()
 
         self.bunch = None
         self.lostbunch = None
@@ -166,16 +164,16 @@ class SNS_RING(TEAPOT_Ring):
         
     def initialize(self) -> None:
         """Adds on to `lattice.initialize()`. Call this after the lattice is loaded."""
-        super().initialize()
+        self.lattice.initialize()
 
         self.inj_kicker_nodes = []
         for name in self.inj_kicker_names:
-            for node in self.getNodes():
+            for node in self.lattice.getNodes():
                 if node.getName().lower() == name:
                     self.inj_kicker_nodes.append(node)
 
         self.solenoid_nodes = []
-        for node in self.getNodes():
+        for node in self.lattice.getNodes():
             if node.getName().lower() in self.solenoid_names:
                 self.solenoid_nodes.append(node)
                 # Set strength manually.
@@ -196,7 +194,7 @@ class SNS_RING(TEAPOT_Ring):
             self.params_dict["lostbunch"] = lostbunch
 
     def set_fringe(self, setting: bool) -> None:
-        for node in self.getNodes():
+        for node in self.lattice.getNodes():
             try:
                 node.setUsageFringeFieldIN(setting)
                 node.setUsageFringeFieldOUT(setting)
@@ -244,7 +242,7 @@ class SNS_RING(TEAPOT_Ring):
             dist_z,
             n_parts_max,
         )
-        parent_node = self.getNodes()[parent_index]
+        parent_node = self.lattice.getNodes()[parent_index]
         parent_node.addChildNode(self.injection_node, AccNode.ENTRANCE)
         return self.injection_node
 
@@ -280,7 +278,7 @@ class SNS_RING(TEAPOT_Ring):
         )
         self.foil_node.setScatterChoice(scatter)
 
-        parent_node = self.getNodes()[parent_index]
+        parent_node = self.lattice.getNodes()[parent_index]
         parent_node.addChildNode(self.foil_node, AccNode.ENTRANCE)
         return self.foil_node
 
@@ -503,7 +501,7 @@ class SNS_RING(TEAPOT_Ring):
 
         [Accesses nodes by index: works with MAD output lattice file, not MADX.]
         """
-        nodes = self.getNodes()
+        nodes = self.lattice.getNodes()
         bunch = self.bunch
 
         xcenter = 0.100
@@ -624,7 +622,7 @@ class SNS_RING(TEAPOT_Ring):
 
         [Accesses nodes by index: works with MAD output lattice file, not MADX.]
         """
-        nodes = self.getNodes()
+        nodes = self.lattice.getNodes()
 
         a115p8 = 0.1158
         b078p7 = 0.0787
