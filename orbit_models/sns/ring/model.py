@@ -324,7 +324,7 @@ class SNS_RING:
             boundary = None
 
         self.transverse_spacecharge_nodes = setSC2p5DAccNodes(
-            self,
+            self.lattice,
             path_length_min,
             SpaceChargeCalc2p5D(gridx, gridy, gridz),
             boundary=boundary,
@@ -353,7 +353,7 @@ class SNS_RING:
         if impedance is None:
             impedance = [complex(0.0, 0.0) for _ in range(n_bins // 2)]
         sc_node.assignImpedance(impedance)
-        addLongitudinalSpaceChargeNode(self, position, sc_node)
+        addLongitudinalSpaceChargeNode(self.lattice, position, sc_node)
         
         self.longitudinal_spacecharge_nodes.append(sc_node)
         return sc_node
