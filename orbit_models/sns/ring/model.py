@@ -349,7 +349,7 @@ class SNS_RING:
         -------
         orbit.space_charge.SC1D_AccNode
         """
-        sc_node = SC1D_AccNode(b_over_a, self.getLength(), n_macros_min, 1, n_bins)
+        sc_node = SC1D_AccNode(b_over_a, self.lattice.getLength(), n_macros_min, 1, n_bins)
         if impedance is None:
             impedance = [complex(0.0, 0.0) for _ in range(n_bins // 2)]
         sc_node.assignImpedance(impedance)
