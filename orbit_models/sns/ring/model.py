@@ -480,7 +480,7 @@ class SNS_RING:
         -------
         list[orbit.rf_cavities.Harmonic_RFNode]
         """
-        z_to_phi = 2.0 * math.pi / self.getLength()
+        z_to_phi = 2.0 * math.pi / self.lattice.getLength()
         length = 0.0
 
         rf_node_1a = RFNode.Harmonic_RFNode(z_to_phi, synchronous_de, hnum_1a, voltage_1a, phase_1a, length, "RF1")
