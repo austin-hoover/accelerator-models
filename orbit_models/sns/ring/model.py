@@ -488,10 +488,10 @@ class SNS_RING:
         rf_node_1c = RFNode.Harmonic_RFNode(z_to_phi, synchronous_de, hnum_1c, voltage_1c, phase_1c, length, "RF1")
         rf_node_2 = RFNode.Harmonic_RFNode(z_to_phi, synchronous_de, hnum_2, voltage_2, phase_2, length, "RF2")
 
-        RFLatticeModifications.addRFNode(self, position_1a, rf_node_1a)
-        RFLatticeModifications.addRFNode(self, position_1b, rf_node_1b)
-        RFLatticeModifications.addRFNode(self, position_1c, rf_node_1c)
-        RFLatticeModifications.addRFNode(self, position_2, rf_node_2)
+        RFLatticeModifications.addRFNode(self.lattice, position_1a, rf_node_1a)
+        RFLatticeModifications.addRFNode(self.lattice, position_1b, rf_node_1b)
+        RFLatticeModifications.addRFNode(self.lattice, position_1c, rf_node_1c)
+        RFLatticeModifications.addRFNode(self.lattice, position_2, rf_node_2)
 
         self.rf_nodes = [rf_node_1a, rf_node_1b, rf_node_1c, rf_node_2]
         return self.rf_nodes
