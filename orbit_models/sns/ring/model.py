@@ -391,9 +391,9 @@ class SNS_RING:
             z_imag = (zk.imag / 1.75) + zrf.imag
             Z.append(complex(z_real, z_imag))
 
-        impedance_node = LImpedance_Node(self.getLength(), n_macros_min, n_bins)
+        impedance_node = LImpedance_Node(self.lattice.getLength(), n_macros_min, n_bins)
         impedance_node.assignImpedance(Z)
-        addImpedanceNode(self, position, impedance_node)
+        addImpedanceNode(self.lattice, position, impedance_node)
         
         self.longitudinal_impedance_nodes.append(impedance_node)
         return impedance_node
@@ -428,15 +428,19 @@ class SNS_RING:
         orbit.impedances.TImpedance_Node
         """
         if (ZP is None) or (ZM is None):
-            (ZP, ZM) = read_transverse_impedance_file(self.path.parent.joinpath("./data/hahn_impedance.dat"))
+            (ZP, ZM) = read_transverse_impedance_file(
+                self.path.parent.joinpath("./data/hahn_impedance.dat")
+            )
 
-        impedance_node = TImpedance_Node(self.getLength(), n_macros_min, n_bins, int(use_x), int(use_y))
+        impedance_node = TImpedance_Node(
+            self.lattice.getLength(), n_macros_min, n_bins, int(use_x), int(use_y)
+        )
         impedance_node.assignLatFuncs(tune_x, alpha_x, beta_x, tune_y, alpha_y, beta_y)
         if use_x:
             impedance_node.assignImpedance("X", ZP, ZM)
         if use_y:
             impedance_node.assignImpedance("Y", ZP, ZM)
-        addImpedanceNode(self, position, impedance_node)
+        addImpedanceNode(self.lattice, position, impedance_node)
         
         self.transverse_impedance_nodes.append(impedance_node)
         return impedance_node
