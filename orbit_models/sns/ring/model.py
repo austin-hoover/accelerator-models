@@ -306,29 +306,30 @@ class SNS_RING:
         list[orbit.space_charge.SC2p5DAccNodes]
         list[orbit.space_charge.SC2DSliceBySliceAccNodes]
         """
-
-        calculator = None
-        if solver == "2p5d":
-            calculator = SpaceChargeCalc2p5D(gridx, gridy, gridz)
-        elif solver == "slicebyslice":
-            calculator = SpaceChargeCalcSliceBySlice2D(gridx, gridy, gridz)
-        else:
-            raise ValueError(f"Invalid solver {solver}")
-            
         if boundary:
             boundary = Boundary2D(
                 boundary_points, boundary_modes, "Circle", boundary_radius, boundary_radius
             )
-
-        if boundary == 0:
+        if not boundary:
             boundary = None
 
-        self.transverse_spacecharge_nodes = setSC2p5DAccNodes(
-            self.lattice,
-            path_length_min,
-            SpaceChargeCalc2p5D(gridx, gridy, gridz),
-            boundary=boundary,
-        )
+        self.transverse_spacecharge_nodes = []
+        if solver == "2p5d":
+            calculator = SpaceChargeCalc2p5D(gridx, gridy, gridz)
+            self.transverse_spacecharge_nodes = setSC2p5DAccNodes(
+                self.lattice,
+                path_length_min,
+                calculator,
+                boundary=boundary,
+            )
+        elif solver in ["slicebyslice", "slice", "sbs"]:
+            calculator = SpaceChargeCalcSliceBySlice2D(gridx, gridy, gridz)
+            self.transverse_spacecharge_nodes = setSC2DSliceBySliceAccNodes(
+                self.lattice,
+                path_length_min,
+                calculator,
+                boundary=boundary
+            )
         return self.transverse_spacecharge_nodes
 
     def add_longitudinal_spacecharge_node(
