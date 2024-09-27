@@ -1,3 +1,4 @@
+"""SNS ring model."""
 from typing import Any
 import math
 import os
@@ -73,7 +74,7 @@ from orbit.utils.consts import mass_proton
 from orbit.utils.consts import speed_of_light
 
 
-## Foil boundary relative to injection point [m]
+## Default foild boundary relative to injection point [m]
 FOIL_XMIN_REL = -0.005
 FOIL_XMAX_REL = +0.014722
 FOIL_YMIN_REL = -0.005
@@ -377,6 +378,7 @@ class SNS_RING:
         -------
         orbit.impedances.LImpedance_Node
         """
+
         if Zk is None:
             Zk = read_longitudinal_impedance_file(
                 self.path.parent.joinpath("data/longitudinal_impedance_ekicker.dat")
@@ -385,14 +387,95 @@ class SNS_RING:
             Zrf = read_longitudinal_impedance_file(
                 self.path.parent.joinpath("data/longitudinal_impedance_rf.dat")
             )
-
+        
         Z = []
         for zk, zrf in zip(Zk, Zrf):
             z_real = (zk.real / 1.75) + zrf.real
             z_imag = (zk.imag / 1.75) + zrf.imag
             Z.append(complex(z_real, z_imag))
 
-        impedance_node = LImpedance_Node(self.lattice.getLength(), n_macros_min, n_bins)
+        # ## Reading from file is somehow causing a memory leak when using MPI.
+        # ## I don't understand why. Hardcording works, however.
+        # ZL_EKicker = [
+        #     complex(42.0, -182),
+        #     complex(35, -101.5),
+        #     complex(30.3333, -74.6667),
+        #     complex(31.5, -66.5),
+        #     complex(32.2, -57.4),
+        #     complex(31.5, -51.333),
+        #     complex(31, -49),
+        #     complex(31.5, -46.375),
+        #     complex(31.8889, -43.556),
+        #     complex(32.9, -40.6),
+        #     complex(32.7273, -38.18),
+        #     complex(32.25, -35.58),
+        #     complex(34.46, -32.846),
+        #     complex(35, -30.5),
+        #     complex(35.4667, -28.0),
+        #     complex(36.75, -25.81),
+        #     complex(36.647, -23.88),
+        #     complex(36.944, -21.1667),
+        #     complex(36.474, -20.263),
+        #     complex(36.4, -18.55),
+        #     complex(35.333, -17),
+        #     complex(35, -14.95),
+        #     complex(33.478, -13.69),
+        #     complex(32.375, -11.67),
+        #     complex(30.8, -10.08),
+        #     complex(29.615, -8.077),
+        #     complex(28.519, -6.74),
+        #     complex(27.5, -5),
+        #     complex(26.552, -4.103),
+        #     complex(25.433, -3.266),
+        #     complex(24.3871, -2.7),
+        #     complex(23.40625, -2.18),
+        # ]
+        
+        # ZL_RF = [
+        #     complex(0.0, 0.0),
+        #     complex(0.750, 0.0),
+        #     complex(0.333, 0.0),
+        #     complex(0.250, 0.0),
+        #     complex(0.200, 0.0),
+        #     complex(0.167, 0.0),
+        #     complex(3.214, 0.0),
+        #     complex(0.188, 0.0),
+        #     complex(0.167, 0.0),
+        #     complex(0.150, 0.0),
+        #     complex(1.000, 0.0),
+        #     complex(0.125, 0.0),
+        #     complex(0.115, 0.0),
+        #     complex(0.143, 0.0),
+        #     complex(0.333, 0.0),
+        #     complex(0.313, 0.0),
+        #     complex(0.294, 0.0),
+        #     complex(0.278, 0.0),
+        #     complex(0.263, 0.0),
+        #     complex(0.250, 0.0),
+        #     complex(0.714, 0.0),
+        #     complex(0.682, 0.0),
+        #     complex(0.652, 0.0),
+        #     complex(0.625, 0.0),
+        #     complex(0.600, 0.0),
+        #     complex(0.577, 0.0),
+        #     complex(0.536, 0.0),
+        #     complex(0.536, 0.0),
+        #     complex(0.517, 0.0),
+        #     complex(0.500, 0.0),
+        #     complex(0.484, 0.0),
+        #     complex(0.469, 0.0),
+        # ]
+        
+        # Z = []
+        # for i in range(32):
+        #     zk = ZL_EKicker[i]
+        #     zrf = ZL_RF[i]
+        #     zreal = zk.real / 1.75 + zrf.real
+        #     zimag = zk.imag / 1.75 + zrf.imag
+        #     Z.append(complex(zreal, zimag))
+            
+        length = self.lattice.getLength()
+        impedance_node = LImpedance_Node(length, n_macros_min, n_bins)
         impedance_node.assignImpedance(Z)
         addImpedanceNode(self.lattice, position, impedance_node)
         
@@ -1154,286 +1237,3 @@ class SNS_RING:
         """Set solenoid magnet strengths [units]."""
         for node in self.solenoid_nodes:
             node.setParam("B", B)
-
-
-# class SingleParticleMonitorNode(teapot.DriftTEAPOT):
-# 	def __init__(self, position=None):
-# 		DriftTEAPOT.__init__(self)
-#         self.position = position
-#         self.coords = np.zeros(4)
-
-# 	def track(self, params_dict):
-# 		bunch = params_dict["bunch"]
-#         self.coords[0] = bunch.x(0)
-#         self.coords[2] = bunch.y(0)
-#         self.coords[1] = bunch.xp(0)
-#         self.coords[3] = bunch.yp(0)
-
-
-# class InjectionController:
-#     def __init__(
-#         self,
-#         ring=None,
-#         mass=None,
-#         kin_energy=None,
-#         inj_mid="injm1",
-#         inj_start="bpm_a09",
-#         inj_end="bpm_b01",
-#     ):
-#         self.ring = ring
-#         self.mass = mass
-#         self.kin_energy = kin_energy
-#         self.kicker_names = [
-#             "ikickh_a10",
-#             "ikickv_a10",
-#             "ikickh_a11",
-#             "ikickv_a11",
-#             "ikickv_a12",
-#             "ikickh_a12",
-#             "ikickv_a13",
-#             "ikickh_a13",
-#         ]
-#         self.kicker_nodes = [ring.getNodeForName(name) for name in self.kicker_names]
-
-#         # Maximum injection kicker angles at 1.0 GeV [mrad].
-#         self.min_kicker_angles = MIN_KICKER_ANGLES
-#         self.max_kicker_angles = MAX_KICKER_ANGLES
-
-#         # Convert the maximum kicker angles from [mrad] to [rad].
-#         self.min_kicker_angles = 1.00e-03 * self.min_kicker_angles
-#         self.max_kicker_angles = 1.00e-03 * self.max_kicker_angles
-
-#         # Scale the maximum kicker angles based on kinetic energy. (They are defined for
-#         # the nominal SNS kinetic energy of 1.0 GeV.)
-#         self.kin_energy_scale_factor = get_pc(mass, kin_energy=1.0) / get_pc(mass, kin_energy)
-#         self.min_kicker_angles *= self.kin_energy_scale_factor
-#         self.max_kicker_angles *= self.kin_energy_scale_factor
-
-#         # Identify the horizontal and vertical kicker nodes. (PyORBIT does not
-#         # distinguish between horizontal/vertical kickers.)
-#         self.kicker_idx_x = [0, 2, 5, 7]
-#         self.kicker_idx_y = [1, 3, 4, 6]
-#         self.kicker_nodes_x = [self.kicker_nodes[i] for i in self.kicker_idx_x]
-#         self.kicker_nodes_y = [self.kicker_nodes[i] for i in self.kicker_idx_y]
-#         self.min_kicker_angles_x = self.min_kicker_angles[self.kicker_idx_x]
-#         self.max_kicker_angles_x = self.max_kicker_angles[self.kicker_idx_x]
-#         self.min_kicker_angles_y = self.min_kicker_angles[self.kicker_idx_y]
-#         self.max_kicker_angles_y = self.max_kicker_angles[self.kicker_idx_y]
-
-#         # Identify dipole correctors. These will be used to make a closed bump.
-#         self.vcorrector_names = ["dmcv_a09", "dchv_a10", "dchv_a13", "dmcv_b01"]
-#         self.vcorrector_nodes = [self.ring.getNodeForName(name) for name in self.vcorrector_names]
-#         self.max_vcorrector_angle = MAX_VCORRECTOR_ANGLE  # [mrad]
-#         self.max_vcorrector_angle *= 1.0e-3  # [mrad] --> [rad]
-#         self.max_vcorrector_angle *= self.kin_energy_scale_factor
-#         self.min_vcorrector_angle = -self.max_vcorrector_angle
-
-#         # Create one sublattice for the first half of the injection region (before the foil)
-#         # and one sublattice for the second half of the injection region (afterthe foil).
-#         self.sublattice1 = self.ring.getSubLattice(
-#             self.ring.getNodeIndex(self.ring.getNodeForName(inj_start)),
-#             -1,
-#         )
-#         self.sublattice2 = self.ring.getSubLattice(
-#             self.ring.getNodeIndex(self.ring.getNodeForName(inj_mid)),
-#             self.ring.getNodeIndex(self.ring.getNodeForName(inj_end)),
-#         )
-#         self.sublattices = [self.sublattice1, self.sublattice2]
-
-#         # Initialize bunch for single-particle tracking.
-#         self.bunch = Bunch()
-#         self.bunch.mass(mass)
-#         self.bunch.getSyncParticle().kinEnergy(kin_energy)
-#         self.params_dict = {"lostbunch": Bunch()}  # for apertures
-#         self.bunch.addParticle(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-
-#     def scale_kicker_limits(self, factor=1.0):
-#         """Scale all kicker limits by factor."""
-#         self.min_kicker_angles = factor * self.min_kicker_angles
-#         self.max_kicker_angles = factor * self.max_kicker_angles
-#         self.min_kicker_angles_x = self.min_kicker_angles[self.kicker_idx_x]
-#         self.max_kicker_angles_x = self.max_kicker_angles[self.kicker_idx_x]
-#         self.min_kicker_angles_y = self.min_kicker_angles[self.kicker_idx_y]
-#         self.max_kicker_angles_y = self.max_kicker_angles[self.kicker_idx_y]
-
-#     def get_nodes(self):
-#         """Return list of nodes inj injection region (in order)."""
-#         return self.sublattice1.getNodes() + self.sublattice2.getNodes()
-
-#     def get_kicker_angles_x(self):
-#         """Return horizontal kicker angles"""
-#         return np.array([node.getParam("kx") for node in self.kicker_nodes_x])
-
-#     def get_kicker_angles_y(self):
-#         """Return vertical kicker angles"""
-#         return np.array([node.getParam("ky") for node in self.kicker_nodes_y])
-
-#     def get_kicker_angles(self):
-#         """Return all kicker angles."""
-#         angles = []
-#         for node in self.kicker_nodes:
-#             if node in self.kicker_nodes_x:
-#                 angles.append(node.getParam("kx"))
-#             elif node in self.kicker_nodes_y:
-#                 angles.append(node.getParam("ky"))
-#         return np.array(angles)
-
-#     def set_kicker_angles_x(self, angles=None):
-#         """Set horizontal kicker angles."""
-#         if angles is not None:
-#             for angle, node in zip(angles, self.kicker_nodes_x):
-#                 node.setParam("kx", angle)
-
-#     def set_kicker_angles_y(self, angles=None):
-#         """Set vertical kicker angles."""
-#         if angles is not None:
-#             for angle, node in zip(angles, self.kicker_nodes_y):
-#                 node.setParam("ky", angle)
-
-#     def set_kicker_angles(self, angles):
-#         """Set all kicker angles."""
-#         angles_x = [angles[i] for i in self.kicker_idx_x]
-#         angles_y = [angles[i] for i in self.kicker_idx_y]
-#         self.set_kicker_angles_x(angles_x)
-#         self.set_kicker_angles_y(angles_y)
-
-#     def get_vcorrector_angles(self):
-#         """Return vertical orbit corrector angles."""
-#         return np.array([node.getParam("ky") for node in self.vcorrector_nodes])
-
-#     def set_vcorrector_angles(self, angles):
-#         """Set vertical orbit corrector angles."""
-#         for angle, node in zip(angles, self.vcorrector_nodes):
-#             node.setParam("ky", angle)
-
-#     def init_part(self, x=0.0, xp=0.0, y=0.0, yp=0.0):
-#         """Initialize a single particle at the origin."""
-#         self.bunch.deleteParticle(0)
-#         self.bunch.addParticle(x, xp, y, yp, 0.0, 0.0)
-
-#     def track_part(self, sublattice=0):
-#         """Track particle through one half of injection"""
-#         self.sublattices[sublattice].trackBunch(self.bunch, self.params_dict)
-#         return np.array([self.bunch.x(0), self.bunch.xp(0), self.bunch.y(0), self.bunch.yp(0)])
-
-#     def set_inj_coords(self, coords, guess=None, weight_momentum=10.0, **kws):
-
-#         _mpi_comm = orbit_mpi.mpi_comm.MPI_COMM_WORLD
-#         _mpi_rank = orbit_mpi.MPI_Comm_rank(_mpi_comm)
-
-#         kws.setdefault("xtol", 1.00e-12)
-#         kws.setdefault("ftol", 1.00e-12)
-#         kws.setdefault("gtol", 1.00e-12)
-
-#         coords = np.array(coords)
-#         if guess is None:
-#             guess = np.zeros(8)
-
-#         def norm(_coords):
-#             for i in (1, 3):
-#                 _coords[i] *= weight_momentum
-#             return np.mean(np.square(_coords))
-
-#         def cost_func(angles):
-#             self.set_kicker_angles(angles)
-#             self.init_part(0.0, 0.0, 0.0, 0.0)
-#             coords_mid = self.track_part(sublattice=0)
-#             coords_end = self.track_part(sublattice=1)
-#             cost = norm(coords_mid - coords) + norm(coords_end)
-#             cost = cost * 1.00e+06
-#             return cost, coords_mid, coords_end
-
-
-#         class Optimizer:
-#             def __init__(self):
-#                 self.calls = 0
-
-#             def objective(self, x):
-#                 cost, coords_mid, coords_end = cost_func(x)
-#                 self.calls += 1
-#                 message = "call={:05.0f} ".format(self.calls)
-#                 message += "x={:>+5.3f} xp={:>+5.3f} y={:>+5.3f} yp={:>+5.3f}".format(
-#                     1000.0 * coords_mid[0],
-#                     1000.0 * coords_mid[1],
-#                     1000.0 * coords_mid[2],
-#                     1000.0 * coords_mid[3],
-#                 )
-#                 message += " | "
-#                 message += "x={:>+5.3f} xp={:>+5.3f} y={:>+5.3f} yp={:>+5.3f}".format(
-#                     1000.0 * coords_end[0],
-#                     1000.0 * coords_end[1],
-#                     1000.0 * coords_end[2],
-#                     1000.0 * coords_end[3],
-#                 )
-#                 if _mpi_rank == 0:
-#                     print(message)
-#                 return cost
-
-#         optimizer = Optimizer()
-#         opt.minimize(
-#             optimizer.objective,
-#             guess,
-#             bounds=opt.Bounds(self.min_kicker_angles, self.max_kicker_angles),
-#             method="trust-constr",
-#             options=dict(xtol=1.00e-10, gtol=1.00e-10),
-#         )
-#         return self.get_kicker_angles()
-
-#     def get_trajectory(self):
-#         node_pos_dict = self.ring.getNodePositionsDict()
-
-#         class Monitor:
-#             def __init__(self):
-#                 self.coords = []
-#                 self.nodes = []
-
-#             def action(self, params_dict):
-#                 bunch = params_dict["bunch"]
-#                 node = params_dict["node"]
-#                 if node in node_pos_dict:
-#                     self.nodes.append(node)
-#                     self.coords.append([bunch.x(0), bunch.xp(0), bunch.y(0), bunch.yp(0)])
-
-#         monitors = []
-#         self.init_part(0.0, 0.0, 0.0, 0.0)
-#         for i, sublattice in enumerate(self.sublattices):
-#             monitor = Monitor()
-#             actions_container = AccActionsContainer()
-#             actions_container.addAction(monitor.action, AccActionsContainer.ENTRANCE)
-#             sublattice.trackBunch(self.bunch, self.params_dict, actions_container)
-#             monitors.append(monitor)
-
-#         positions = []
-#         offset = 0.0
-#         for i, monitor in enumerate(monitors):
-#             if i == 1:
-#                 offset = positions[-1]
-#             positions.append(offset)
-#             for j in range(1, len(monitor.nodes)):
-#                 start, _ = node_pos_dict[monitor.nodes[j - 1]]
-#                 stop, _ = node_pos_dict[monitor.nodes[j]]
-#                 step = np.abs(stop - start)
-#                 positions.append(positions[-1] + step)
-
-#         nodes = monitors[0].nodes + monitors[1].nodes
-#         nodes = [node.getName() for node in nodes]
-
-#         coords = monitors[0].coords + monitors[1].coords
-
-#         data = pd.DataFrame(coords, columns=["x", "xp", "y", "yp"])
-#         data["s"] = positions
-#         data["node"] = nodes
-#         return data
-
-#     def print_inj_coords(self):
-#         coords_start = np.zeros(4)
-#         self.init_part(*coords_start)
-#         coords_mid = self.track_part(sublattice=0)
-#         coords_end = self.track_part(sublattice=1)
-#         for _coords, tag in zip([coords_start, coords_mid, coords_end], ["start", "mid", "end"]):
-#             _coords = _coords * 1000.0
-#             print("Coordinates at inj_{}:".format(tag))
-#             print("  x  = {:0.3f} [mm]".format(_coords[0]))
-#             print("  y  = {:0.3f} [mm]".format(_coords[2]))
-#             print("  xp = {:0.3f} [mrad]".format(_coords[1]))
-#             print("  yp = {:0.3f} [mrad]".format(_coords[3]))
