@@ -1,3 +1,7 @@
+"""Library for ring injection control.
+
+(Has not been tested recently.)
+"""
 import numpy as np
 import scipy.optimize as opt
 

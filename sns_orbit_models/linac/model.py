@@ -1,4 +1,3 @@
-"""SNS linac model, containing boilerplate code to set up the lattice."""
 import math
 import os
 import pathlib
@@ -6,7 +5,6 @@ from typing import Any
 from typing import Callable
 
 import numpy as np
-import scipy.optimize
 
 from orbit.core.bunch import Bunch
 from orbit.core.linac import BaseRfGap
@@ -18,12 +16,14 @@ from orbit.lattice import AccLattice
 from orbit.lattice import AccNode
 from orbit.py_linac.lattice import AxisFieldRF_Gap
 from orbit.py_linac.lattice import AxisField_and_Quad_RF_Gap
+from orbit.py_linac.lattice import BaseLinacNode
 from orbit.py_linac.lattice import BaseRF_Gap
 from orbit.py_linac.lattice import Bend
 from orbit.py_linac.lattice import Drift
 from orbit.py_linac.lattice import LinacApertureNode
 from orbit.py_linac.lattice import LinacEnergyApertureNode
 from orbit.py_linac.lattice import LinacPhaseApertureNode
+from orbit.py_linac.lattice import LinacTrMatrixGenNode
 from orbit.py_linac.lattice import OverlappingQuadsNode 
 from orbit.py_linac.lattice import Quad
 from orbit.py_linac.lattice_modifications import Add_drift_apertures_to_lattice
@@ -40,10 +40,7 @@ from orbit.py_linac.overlapping_fields import SNS_EngeFunctionFactory
 from orbit.space_charge.sc3d import setSC3DAccNodes
 from orbit.space_charge.sc3d import setUniformEllipsesSCAccNodes
 
-from orbit_tools.linac import add_aperture_nodes_to_classes
-from orbit_tools.linac import add_aperture_nodes_to_drifts
-from orbit_tools.linac import make_energy_aperture_node
-from orbit_tools.linac import make_phase_aperture_node
+from ..model import AccModel 
 
 
 SEQUENCES = [
@@ -65,7 +62,128 @@ SEQUENCES = [
 ]
 
 
-class SNS_LINAC:
+def add_aperture_nodes_to_classes(
+    lattice: AccLattice,
+    classes: list = None,
+    nametag: str = "aprt",
+    node_constructor: Callable = None,
+    node_constructor_kws: dict = None,
+) -> list[AccNode]:
+    """Add aperture nodes to all nodes of a specified class (or classes).
+
+    Parameters
+    ----------
+    lattice: AccLattice
+        The accelerator lattice.
+    classes : list
+        Add child node to parent if parent's class is in this list.
+    nametag : str
+        Nodes are named "{parent_node_name}_{nametag}_in" and "{parent_node_name}_{nametag}_out".
+    node_constructor : callable
+        Returns an aperture node.
+    node_constructor_kws : dict
+        Key word arguments for `node_constructor`. (`aperture_node = node_constructor(**node_constructor)`).
+
+    Returns
+    -------
+    list[AccNode]
+        The aperture nodes added to the lattice.
+    """
+    node_pos_dict = lattice.getNodePositionsDict()
+    aperture_nodes = []
+    for node in lattice.getNodesOfClasses(classes):
+        if node.hasParam("aperture") and node.hasParam("aprt_type"):
+            for location, suffix, position in zip(
+                [node.ENTRANCE, node.EXIT], ["in", "out"], node_pos_dict[node]
+            ):
+                aperture_node = node_constructor(**node_constructor_kws)
+                aperture_node.setName(f"{node.getName()}_{nametag}_{suffix}")
+                aperture_node.setPosition(position)
+                aperture_node.setSequence(node.getSequence())
+                node.addChildNode(aperture_node, location)
+                aperture_nodes.append(aperture_node)
+    return aperture_nodes
+
+
+def add_aperture_nodes_to_drifts(
+    lattice: AccLattice,
+    start: float = 0.0,
+    stop: float = None,
+    step: float = 1.0,
+    nametag: str = "aprt",
+    node_constructor: Callable = None,
+    node_constructor_kws: dict = None,
+) -> list[AccNode]:
+    """Add aperture nodes to drift spaces as child nodes.
+
+    Parameters
+    ----------
+    lattice: AccLattice
+        The accelerator lattice.
+    start, stop, stop. : float
+        Nodes are added between `start` [m] and `stop` [m] with spacing `step` [m].
+    nametag : str
+        Nodes are named "{parent_node_name}:{part_index}_{nametag}".
+    node_constructor : callable
+        Returns an aperture node.
+    node_constructor_kws : dict
+        Key word arguments for `node_constructor`. (`aperture_node = node_constructor(**node_constructor)`).
+
+    Returns
+    -------
+    list[AccNode]
+        The aperture nodes added to the lattice.
+    """
+    if node_constructor is None:
+        return
+
+    if node_constructor_kws is None:
+        node_constructor_kws = dict()
+
+    if stop is None:
+        stop = lattice.getLength()
+
+    node_pos_dict = lattice.getNodePositionsDict()
+    parent_nodes = lattice.getNodesOfClasses([Drift])
+    last_position, _ = node_pos_dict[parent_nodes[0]]
+    last_position = last_position - 2.0 * step
+    child_nodes = []
+    for parent_node in parent_nodes:
+        position, _ = node_pos_dict[parent_node]
+        if position > stop:
+            break
+        for index in range(parent_node.getnParts()):
+            if start <= position <= stop:
+                if position >= (last_position + step):
+                    child_node = node_constructor(**node_constructor_kws)
+                    name = "{}".format(parent_node.getName())
+                    if parent_node.getnParts() > 1:
+                        name = "{}:{}".format(name, index)
+                    child_node.setName("{}_{}".format(name, nametag))
+                    child_node.setPosition(position)
+                    child_node.setSequence(parent_node.getSequence())
+                    parent_node.addChildNode(
+                        child_node, parent_node.BODY, index, parent_node.BEFORE
+                    )
+                    child_nodes.append(child_node)
+                    last_position = position
+            position += parent_node.getLength(index)
+    return child_nodes
+
+
+def make_phase_aperture_node(phase_min: float, phase_max: float, rf_freq: float) -> LinacPhaseApertureNode:
+    aperture_node = LinacPhaseApertureNode(frequency=rf_freq)
+    aperture_node.setMinMaxPhase(phase_min, phase_max)
+    return aperture_node
+
+
+def make_energy_aperture_node(energy_min: float, energy_max: float) -> LinacEnergyApertureNode:
+    aperture_node = LinacEnergyApertureNode()
+    aperture_node.setMinMaxEnergy(energy_min, energy_max)
+    return aperture_node
+
+
+class SNS_LINAC(AccModel):
     def __init__(
         self, 
         xml_filename: str = None,
@@ -74,7 +192,10 @@ class SNS_LINAC:
         max_drift: float = 0.010, 
         rf_freq: float = 402.5e+06,
         verbose: bool = True,
+        **kwargs
     ) -> None:
+        super().__init__(**kwargs)
+        
         self.path = pathlib.Path(__file__)
         self.xml_filename = xml_filename
         if self.xml_filename is None:

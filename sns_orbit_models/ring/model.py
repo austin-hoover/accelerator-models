@@ -1,4 +1,4 @@
-"""SNS ring model."""
+"""SNS accumulator ring model."""
 from typing import Any
 import math
 import os
@@ -73,6 +73,8 @@ from orbit.utils import consts
 from orbit.utils.consts import mass_proton
 from orbit.utils.consts import speed_of_light
 
+from ..model import AccModel
+
 
 ## Default foild boundary relative to injection point [m]
 FOIL_XMIN_REL = -0.005
@@ -96,7 +98,7 @@ def read_transverse_impedance_file(path: str) -> tuple[list[complex]]:
     return (zp, zm)
 
 
-class SNS_RING:
+class SNS_RING(AccModel):
     def __init__(
         self,
         inj_x: float = 0.0486,
@@ -107,7 +109,10 @@ class SNS_RING:
         foil_xmax_rel: float = None,
         foil_ymin_rel: float = None,
         foil_ymax_rel: float = None,
+        **kwargs
     ) -> None:
+        super().__init__(**kwargs)
+        
         self.lattice = TEAPOT_Ring()
 
         self.bunch = None
