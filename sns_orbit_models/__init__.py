@@ -3,6 +3,7 @@ from . import linac
 from . import ring
 from . import rtbt
 
+from .model import AccModel
 from .btf import SNS_BTF
 from .linac import SNS_LINAC
 from .ring import SNS_RING
