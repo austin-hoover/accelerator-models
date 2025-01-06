@@ -1,4 +1,4 @@
-"""SNS ring model."""
+"""SNS accumulator ring model."""
 from typing import Any
 import math
 import os
@@ -73,6 +73,8 @@ from orbit.utils import consts
 from orbit.utils.consts import mass_proton
 from orbit.utils.consts import speed_of_light
 
+from ..model import AccModel
+
 
 ## Default foild boundary relative to injection point [m]
 FOIL_XMIN_REL = -0.005
@@ -96,9 +98,26 @@ def read_transverse_impedance_file(path: str) -> tuple[list[complex]]:
     return (zp, zm)
 
 
-class SNS_RING:
+def read_lattice_file(lattice: AccLattice, filename: str, filetype: str, seq: str) -> AccLattice:
+    if not os.path.exists(filename):
+        raise FileNotFoundErro
+        
+    if filetype.lower() == "madx":
+        lattice.readMADX(filename, seq)
+    elif filetype.lower() == "mad":
+        lattice.readMAD(filename, seq)
+    else:
+        raise ValueError(f"Invalid file type {filetype}")
+
+    return lattice
+    
+
+class SNS_RING(AccModel):
     def __init__(
         self,
+        lattice_file: str = None,
+        lattice_file_type: str = None,
+        lattice_seq: str = None,
         inj_x: float = 0.0486,
         inj_y: float = 0.0460,
         inj_xp: float = 0.0,
@@ -107,7 +126,12 @@ class SNS_RING:
         foil_xmax_rel: float = None,
         foil_ymin_rel: float = None,
         foil_ymax_rel: float = None,
+        **kwargs
     ) -> None:
+        super().__init__(**kwargs)
+
+        self.path = pathlib.Path(__file__)
+        
         self.lattice = TEAPOT_Ring()
 
         self.bunch = None
@@ -161,7 +185,23 @@ class SNS_RING:
         ]
         self.solenoid_names = ["scbdsol_c13a", "scbdsol_c13b"]
 
-        self.path = pathlib.Path(__file__)
+        self.lattice_file = lattice_file
+        self.lattice_file_type = lattice_file_type
+        self.lattice_seq = lattice_seq
+
+        # Read lattice file
+        if self.lattice_file == "default":
+            self.lattice_file = self.path.parent.joinpath("./mad/sns_ring_mad.lattice")
+            self.lattice_file_type = "mad"
+            self.lattice_seq = "RINGINJ"
+            
+        if self.lattice_file is not None:
+            self.lattice = read_lattice_file(
+                self.lattice,
+                self.lattice_file,
+                self.lattice_file_type,
+                self.lattice_seq,
+            )
         
     def initialize(self) -> None:
         """Adds on to `lattice.initialize()`. Call this after the lattice is loaded."""

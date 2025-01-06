@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyorbit-models"
+name = "sns-pyorbit-models"
 authors = [
   { name="Austin Hoover", email="hooveram@ornl.gov" },
 ]
 version = "0.0.1"
-description = "PyORBIT accelerator models"
+description = "PyORBIT SNS accelerator models"
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -17,4 +17,4 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/austin-hoover/pyorbit-models"
+Homepage = "https://github.com/austin-hoover/sns-pyorbit-models"
