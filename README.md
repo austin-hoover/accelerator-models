@@ -1,1 +1,1 @@
-# PyORBIT Models
+# SNS PyORBIT accelerator models
