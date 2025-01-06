@@ -1,11 +1,13 @@
 """SNS accumulator ring model."""
 from typing import Any
+import collections
 import math
 import os
 import pathlib
 import sys
 import time
 import warnings
+from pprint import pprint
 
 import numpy as np
 import pandas as pd
@@ -110,7 +112,24 @@ def read_lattice_file(lattice: AccLattice, filename: str, filetype: str, seq: st
         raise ValueError(f"Invalid file type {filetype}")
 
     return lattice
-    
+
+
+def rename_nodes_avoid_duplicates(lattice: AccLattice, verbose: bool = False) -> None:
+    node_names = [node.getName() for node in lattice.getNodes()]
+    counter = collections.Counter(node_names)
+    if verbose:
+        pprint(counter)
+    for name, count in counter.items():
+        if count > 1:
+            for index, node in enumerate(lattice.getNodes()):
+                if node.getName() == name:
+                    old_name = node.getName()
+                    new_name = f"{old_name}_{index}"
+                    if verbose:
+                        print(f"index={index} {old_name} -> {new_name}")
+                    node.setName(new_name)
+    return lattice
+
 
 class SNS_RING(AccModel):
     def __init__(
@@ -126,6 +145,7 @@ class SNS_RING(AccModel):
         foil_xmax_rel: float = None,
         foil_ymin_rel: float = None,
         foil_ymax_rel: float = None,
+        avoid_duplicate_node_names: bool = True,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
@@ -202,7 +222,14 @@ class SNS_RING(AccModel):
                 self.lattice_file_type,
                 self.lattice_seq,
             )
-        
+
+        self.avoid_duplicate_node_names = avoid_duplicate_node_names
+        if self.avoid_duplicate_node_names:
+            self.rename_nodes_avoid_duplicates()
+
+    def rename_nodes_avoid_duplicates(self) -> None:
+        self.lattice = rename_nodes_avoid_duplicates(self.lattice, self.verbose)
+
     def initialize(self) -> None:
         """Adds on to `lattice.initialize()`. Call this after the lattice is loaded."""
         self.lattice.initialize()
@@ -1171,24 +1198,24 @@ class SNS_RING(AccModel):
         apell31.addChildNode(appell31, AccNode.EXIT)
         apell32.addChildNode(appell32, AccNode.EXIT)
 
-        addTeapotCollimatorNode(self, 50.3771, p1)
-        addTeapotCollimatorNode(self, 51.1921, scr1t)
-        addTeapotCollimatorNode(self, 51.1966, scr1c)
-        addTeapotCollimatorNode(self, 51.2365, scr2t)
-        addTeapotCollimatorNode(self, 51.2410, scr2c)
-        addTeapotCollimatorNode(self, 51.3902, scr3t)
-        addTeapotCollimatorNode(self, 51.3947, scr3c)
-        addTeapotCollimatorNode(self, 51.4346, scr4t)
-        addTeapotCollimatorNode(self, 51.4391, scr4c)
-        addTeapotCollimatorNode(self, 51.6228, p2sh1)
-        addTeapotCollimatorNode(self, 51.9428, p2)
-        addTeapotCollimatorNode(self, 53.7428, p2sh2)
-        addTeapotCollimatorNode(self, 57.2079, s1sh1)
-        addTeapotCollimatorNode(self, 58.2179, s1)
-        addTeapotCollimatorNode(self, 59.4079, s1sh2)
-        addTeapotCollimatorNode(self, 64.8679, s2sh1)
-        addTeapotCollimatorNode(self, 65.8779, s2)
-        addTeapotCollimatorNode(self, 67.0679, s2sh2)
+        addTeapotCollimatorNode(self.lattice, 50.3771, p1)
+        addTeapotCollimatorNode(self.lattice, 51.1921, scr1t)
+        addTeapotCollimatorNode(self.lattice, 51.1966, scr1c)
+        addTeapotCollimatorNode(self.lattice, 51.2365, scr2t)
+        addTeapotCollimatorNode(self.lattice, 51.2410, scr2c)
+        addTeapotCollimatorNode(self.lattice, 51.3902, scr3t)
+        addTeapotCollimatorNode(self.lattice, 51.3947, scr3c)
+        addTeapotCollimatorNode(self.lattice, 51.4346, scr4t)
+        addTeapotCollimatorNode(self.lattice, 51.4391, scr4c)
+        addTeapotCollimatorNode(self.lattice, 51.6228, p2sh1)
+        addTeapotCollimatorNode(self.lattice, 51.9428, p2)
+        addTeapotCollimatorNode(self.lattice, 53.7428, p2sh2)
+        addTeapotCollimatorNode(self.lattice, 57.2079, s1sh1)
+        addTeapotCollimatorNode(self.lattice, 58.2179, s1)
+        addTeapotCollimatorNode(self.lattice, 59.4079, s1sh2)
+        addTeapotCollimatorNode(self.lattice, 64.8679, s2sh1)
+        addTeapotCollimatorNode(self.lattice, 65.8779, s2)
+        addTeapotCollimatorNode(self.lattice, 67.0679, s2sh2)
 
     def get_solenoid_strengths(self) -> np.ndarray:
         return np.ndarray([node.getParam("B") for node in self.solenoid_nodes])

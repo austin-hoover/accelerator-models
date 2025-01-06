@@ -4,5 +4,5 @@ from orbit.lattice import AccNode
 
 
 class AccModel:
-    def __init__(self) -> None:
-        return
+    def __init__(self, verbose: int = 1) -> None:
+        self.verbose = verbose
