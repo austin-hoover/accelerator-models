@@ -6,6 +6,7 @@ from sns_orbit_models import SNS_BTF
 
 def test_sns_ring():
     model = SNS_RING()
+    model.add_all_aperture_and_collimator_nodes()
 
 
 def test_sns_linac():
