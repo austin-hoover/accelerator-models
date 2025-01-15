@@ -10,8 +10,27 @@ from orbit.core import orbit_mpi
 from orbit.lattice import AccLattice
 from orbit.lattice import AccNode
 
-from orbit_tools.misc import get_magnetic_rigidity
-from orbit_tools.lattice import get_node_for_name_any_case
+
+def get_momentum(mass: float, kin_energy: float) -> float:
+    return np.sqrt(kin_energy * (kin_energy + 2.0 * mass))
+
+
+def get_magnetic_rigidity(mass: float, kin_energy: float) -> float:
+    brho = 1.00e09 * get_momentum(mass=mass, kin_energy=kin_energy) / speed_of_light
+    return brho
+
+
+def get_node_for_name_any_case(lattice: AccLattice, name: str) -> AccNode:
+    nodes = lattice.getNodes()
+    node_names = [node.getName() for node in nodes]
+    if name not in node_names:
+        if name.lower() in node_names:
+            name = name.lower()
+        elif name.upper() in node_names:
+            name = name.upper()
+        else:
+            raise ValueError(f"node {name} not found")
+    return lattice.getNodeForName(name)
 
 
 def get_inj_kicker_angle_limits(mass: float, kin_energy: float) -> tuple[np.ndarray]:
