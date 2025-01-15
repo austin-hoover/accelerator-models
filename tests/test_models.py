@@ -1,6 +1,6 @@
-from sns_orbit_models import SNS_RING
-from sns_orbit_models import SNS_LINAC
-from sns_orbit_models import SNS_BTF
+from sns import SNS_RING
+from sns import SNS_LINAC
+from sns import SNS_BTF
 
 
 
