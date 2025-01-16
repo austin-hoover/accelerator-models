@@ -4,9 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sns"
-authors = [
-  { name="Austin Hoover", email="hooveram@ornl.gov" },
-]
 version = "0.0.1"
 description = "PyORBIT SNS accelerator models"
 readme = "README.md"
@@ -15,6 +12,3 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-
-[project.urls]
-Homepage = "https://github.com/austin-hoover/sns"
