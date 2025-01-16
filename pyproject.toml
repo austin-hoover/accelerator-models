@@ -17,4 +17,4 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/austin-hoover/sns-pyorbit-models"
+Homepage = "https://github.com/austin-hoover/sns"
